@@ -1,1 +1,4 @@
 .venv/
+/mistral-7b-instruct-fp16.yalm
+/model.yalm
+build/
