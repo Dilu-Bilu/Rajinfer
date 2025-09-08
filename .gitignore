@@ -6,7 +6,7 @@ build/
 /model32.yalm
 /model_fp32_rmsnorm.yalm
 Llama-3.2-1B/
-/differences.txt
-/test_cuda.test.cu 
-/test_bf16_matmul.cpp
-/test_cpu_matmul
+differences.txt
+test_cuda.cu 
+test_bf16_matmul.cpp
+test_cpu_matmul
