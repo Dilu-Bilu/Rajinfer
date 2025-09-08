@@ -58,7 +58,7 @@ struct Tokenizer {
   int eos_id = -1;
   int eot_id = -1;
   // start index of the byte fallback range (256 tokens). -1 if none.
-  int byte_fallback_start = 0;
+  int byte_fallback_start = -1;
 
   // convenience array containing the decodings for the fixed 256 byte fallbacks '{0x00}\0', '{0x01}\0', ..., '{0xFF}\0'.
   // TODO: use constexpr?

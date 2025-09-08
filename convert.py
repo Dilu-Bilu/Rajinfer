@@ -172,7 +172,7 @@ def load_weights(model_files, dtype_str, metadata, tie_word_embeddings):
   tensors["model.embed.weight"] = conv(weights["model.embed_tokens.weight"])
 
   for l in range(config["num_hidden_layers"]):
-    tensors[f"model.layers.{l}.attn.norm.weight"] = weights[f"model.layers.{l}.input_layernorm.weight"].float()
+    tensors[f"model.layers.{l}.attn.norm.weight"] = weights[f"model.layers.{l}.input_layernorm.weight"]
 
     rotary_dim = metadata.rotary_dim
     n_heads = metadata.n_heads
@@ -184,7 +184,7 @@ def load_weights(model_files, dtype_str, metadata, tie_word_embeddings):
     tensors[f"model.layers.{l}.attn.wv.weight"] = conv(weights[f"model.layers.{l}.self_attn.v_proj.weight"])
     tensors[f"model.layers.{l}.attn.wo.weight"] = conv(weights[f"model.layers.{l}.self_attn.o_proj.weight"])
 
-    tensors[f"model.layers.{l}.mlp.norm.weight"] = weights[f"model.layers.{l}.post_attention_layernorm.weight"].float()
+    tensors[f"model.layers.{l}.mlp.norm.weight"] = weights[f"model.layers.{l}.post_attention_layernorm.weight"]
 
     if metadata.arch in ["MixtralForCausalLM"]:
       tensors[f"model.layers.{l}.moegate.weight"] = conv(weights[f"model.layers.{l}.block_sparse_moe.gate.weight"])
@@ -201,8 +201,10 @@ def load_weights(model_files, dtype_str, metadata, tie_word_embeddings):
   if tie_word_embeddings == False:
     tensors["model.output.weight"] = conv(weights["lm_head.weight"])
   else:
-    # Model output classifier just uses the word embeddings matrix
-    pass
+    # Fall back to tied embeddings, but break shared storage
+    tensors["model.output.weight"] = tensors["model.embed.weight"].clone()
+    # Optional: ensure layout is nice
+    tensors["model.output.weight"] = tensors["model.output.weight"].contiguous()
   
   print() # newline
   return tensors

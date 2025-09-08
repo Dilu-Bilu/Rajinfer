@@ -1,24 +1,29 @@
 #pragma once
 
-#include "json.hpp"
+#include "nlohmann/json.hpp"
 
 #include <array>
+#include <cstdint>
 #include <string>
 #include <unordered_map>
 
 using json = nlohmann::json;
 
+typedef uint16_t f16_t;
+typedef uint16_t bf16_t;
+// struct f16_t { uint16_t bits; };
+// struct bf16_t { uint16_t bits; };
 // TODO: Should this be narrowed down to what we actually support for model weight representation?
 enum class DType {
-	dt_f32,
-	dt_f16,
-	dt_bf16,
-	dt_f8e5m2,
-	dt_f8e4m3,
-	dt_i32,
-	dt_i16,
-	dt_i8,
-	dt_u8,
+  F32,
+  F16,
+  BF16,
+  F8E5M2,
+  F8E4M3,
+  I32,
+  I16,
+  I8,
+  U8,
 };
 std::string dtype_to_string(DType dtype);
 size_t dtype_size(DType dtype);

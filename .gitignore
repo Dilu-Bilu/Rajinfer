@@ -2,3 +2,6 @@
 /mistral-7b-instruct-fp16.yalm
 /model.yalm
 build/
+/Qwen3-0.6B/
+/model32.yalm
+/model_fp32_rmsnorm.yalm
