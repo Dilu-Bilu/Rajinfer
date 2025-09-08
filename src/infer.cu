@@ -2,14 +2,14 @@
 
 #include <cuda_fp16.h>
 #include "fmt/format.h"
-
+#include <cuda_bf16.h>  // Required for __nv_bfloat16 types and functions
 #include <cfloat>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #define FULL_MASK 0xffffffff
-
+ 
 #define CUDA_CHECK(x)                                                                                    \
   do {                                                                                                 \
     cudaError_t err = x;                                                                             \
@@ -213,6 +213,7 @@ inline float block_all_reduce_sum(float val) {
   return shared[0];
 }
 
+
 __device__
 inline float matmul_row(const float* row, const float* x, int offset, int dim) {
   float sum = 0.0;
@@ -231,6 +232,16 @@ inline float matmul_row(const half* row, const float* x, int offset, int dim) {
     sum += v;
   }
   return warp_reduce_sum(sum);
+}
+
+__device__
+inline float matmul_row(const __nv_bfloat16* row, const float* x, int offset, int dim) {
+    float sum = 0.0f;
+    for (int j = offset; j < dim; j += warpSize) {
+        float v = __bfloat162float(row[j]) * x[j];
+        sum += v;
+    }
+    return warp_reduce_sum(sum);
 }
 
 template <typename T>
@@ -636,6 +647,17 @@ void fused_ffn_w1_w3_glu_act(
 }
 
 __global__
+void copy_embedding_bf16(
+  const __nv_bfloat16* token_embedding_table, int dim, int token, float* out
+) {
+  int i = blockDim.x * blockIdx.x + threadIdx.x;
+  if (i >= dim) return;
+
+  const __nv_bfloat16* v = token_embedding_table + dim * token;
+  out[i] = __bfloat162float(v[i]); // BF16 → float conversion
+}
+
+__global__
 void copy_embedding_float(
   const float* token_embedding_table, int dim, int token, float* out
 ) {
@@ -729,10 +751,26 @@ void rotate_sink_tokens(
   }
 }
 
+// Type map: user-defined → CUDA-native
+template <typename T>
+struct to_cuda_type {
+    using type = T; // default, passthrough
+};
+
+template <>
+struct to_cuda_type<bf16_t> {
+    using type = __nv_bfloat16; // map bf16_t → CUDA bfloat16
+};
+
+// Helper alias
+template <typename T>
+using to_cuda_type_t = typename to_cuda_type<T>::type;
+
 template <typename T>
 void Block::_block_cuda(
   InferenceState& s, int pos, int kv_sink, int kv_pos, int kv_len
 ) const {
+  // using T = typename to_cuda_type<U>::type;
 #define STATIC_KERNEL(x) if (!s.graph().is_created) x;
   const Config& c = *_config;
   
@@ -1083,23 +1121,41 @@ void ffn_cuda(
 
 template void ffn_cuda<float>(float*, float*, float*, float*, float*, int, int, ActivationType);
 template void ffn_cuda<half>(float*, float*, half*, half*, half*, int, int, ActivationType);
-template <> void ffn_cuda<f16_t>(
-  float* xout, float* x, 
-  f16_t* w1, f16_t* w2, f16_t* w3, 
+// template <> void ffn_cuda<f16_t>(
+//   float* xout, float* x, 
+//   f16_t* w1, f16_t* w2, f16_t* w3, 
+//   int hidden_dim, int dim,
+//   ActivationType act
+// ) {
+//   ffn_cuda<half>(
+//     xout, x, 
+//     (half*)w1, (half*)w2, (half*)w3, 
+//     hidden_dim, dim, act
+//   );
+// }
+// bf16_t specialization
+template <> void ffn_cuda<bf16_t>(
+  float* xout, float* x,
+  bf16_t* w1, bf16_t* w2, bf16_t* w3,
   int hidden_dim, int dim,
   ActivationType act
 ) {
-  ffn_cuda<half>(
-    xout, x, 
-    (half*)w1, (half*)w2, (half*)w3, 
+  ffn_cuda<__nv_bfloat16>(
+    xout, x,
+    (__nv_bfloat16*)w1, (__nv_bfloat16*)w2, (__nv_bfloat16*)w3,
     hidden_dim, dim, act
   );
 }
 
 template void Block::_block_cuda<float>(InferenceState&, int, int, int, int) const;
-template void Block::_block_cuda<half>(InferenceState&, int, int, int, int) const;
-template<> void Block::_block_cuda<f16_t>(InferenceState& s, int pos, int kv_sink, int kv_pos, int kv_len) const {
-  _block_cuda<half>(s, pos, kv_sink, kv_pos, kv_len);
+// template void Block::_block_cuda<half>(InferenceState&, int, int, int, int) const;
+// template<> void Block::_block_cuda<f16_t>(InferenceState& s, int pos, int kv_sink, int kv_pos, int kv_len) const {
+//   _block_cuda<half>(s, pos, kv_sink, kv_pos, kv_len);
+// }
+
+template void Block::_block_cuda<__nv_bfloat16>(InferenceState&, int, int, int, int) const;
+template<> void Block::_block_cuda<bf16_t>(InferenceState& s, int pos, int kv_sink, int kv_pos, int kv_len) const {
+  _block_cuda<__nv_bfloat16>(s, pos, kv_sink, kv_pos, kv_len);
 }
 
 void Model::_forward_cuda(InferenceState& s, int token, int pos, InferenceMode mode) {
@@ -1141,6 +1197,10 @@ void Model::_forward_cuda_build_graph(InferenceState& s, int token, int pos, Inf
       }
       case DType::F16: {
         params.func = reinterpret_cast<void*>(copy_embedding_half);
+        break;
+      }
+      case DType::BF16: {
+        params.func = reinterpret_cast<void*>(copy_embedding_bf16);
         break;
       }
       default: {
@@ -1198,6 +1258,12 @@ void Model::_forward_cuda_build_graph(InferenceState& s, int token, int pos, Inf
     case DType::F16: {
       STATIC_KERNEL((matmul_wide<<<c.vocab_size/32, warp_size*32, 0, s.stream()>>>(
         static_cast<half*>(wcls), s.x(), c.dim, c.vocab_size, s.logits()
+      )));
+      break;
+    }
+    case DType::BF16: {
+      STATIC_KERNEL((matmul_wide<<<c.vocab_size/32, warp_size*32, 0, s.stream()>>>(
+        static_cast<__nv_bfloat16*>(wcls), s.x(), c.dim, c.vocab_size, s.logits()
       )));
       break;
     }

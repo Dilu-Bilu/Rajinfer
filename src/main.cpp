@@ -116,17 +116,25 @@ void run_completion(
   // For N steps:
   // - Sample + decode output logits
   // - Forward the model
+  std::string generated_text;
+
+  // For N steps:
   for (int i = 0; i < num_steps || num_steps == -1; i++) {
-    int token_id = sampler.sample(state, temperature);
-    std::string token_str = tokenizer.decode_one(encoding.back(), token_id);
-    std::cout << token_str << std::flush;
-    encoding.push_back(token_id);
-    if (token_id == tokenizer.eos_id || token_id == tokenizer.eot_id) {
-      break;
-    }
-    model.forward(state, token_id, encoding.size() - 1);
-    read_bytes += model.config->active_bytes(encoding.size() - 1);
+      int token_id = sampler.sample(state, temperature);
+      std::string token_str = tokenizer.decode_one(encoding.back(), token_id);
+      generated_text += token_str;   // accumulate instead of printing each token
+      encoding.push_back(token_id);
+
+      if (token_id == tokenizer.eos_id || token_id == tokenizer.eot_id) {
+          break;
+      }
+
+      model.forward(state, token_id, encoding.size() - 1);
+      read_bytes += model.config->active_bytes(encoding.size() - 1);
   }
+
+  // Print the full generated text once
+  std::cout << generated_text << "\n" << std::endl;
   std::cout << "\n" << std::endl;
   uint64_t end_ms = get_timestamp_ms();
   double elapsed_s = (end_ms - start_ms) / 1000.0;
