@@ -12,8 +12,8 @@ rajinfer delivers competitive performance compared to popular frameworks like Hu
 |-----------------|-------------------------------|
 | Hugging Face   | 86.24                         |
 | SGLang         | 90.24                         |
-| vLLM           | 109.36                        |
-| rajinfer       | 110.25                        |
+| rajinfer           | 109.36                        |
+| vLLM       | 110.25                        |
 
 *Note: These are approximate values based on internal testing across 47 prompts (outlier removed). Actual performance may vary depending on model size, hardware, and configuration. For detailed reproduction steps, see the [benchmarking guide](benchmark.md).*
 
