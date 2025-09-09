@@ -1,11 +1,12 @@
 .venv/
 /mistral-7b-instruct-fp16.yalm
+/
 /model.yalm
 build/
 /Qwen3-0.6B/
 /model32.yalm
 /model_fp32_rmsnorm.yalm
-Llama-3.2-1B/
+/Llama-3.2-1B/
 differences.txt
 test_cuda.cu 
 test_bf16_matmul.cpp
