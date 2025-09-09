@@ -5,3 +5,15 @@ Well the first thing that worked was that I used typunit16 for bf16_t.
 -- Turned out I made a cuda reference inside of model.cpp for bf16 
 -- Temperature was also too high causing me to bug out 
 -- Finally, the sampling final embedding was in fp16 and had to change it to bf16 and bf16matmul 
+
+## VLLM 
+
+=== Completed 50 prompts ===
+Total elapsed time: 173.75 seconds
+Average per prompt: 3.48 seconds
+
+### Huggingface: 
+
+=== Completed 50 prompts ===
+Total elapsed time: 284.56 seconds
+Average per prompt: 5.69 seconds
