@@ -1,11 +1,3 @@
-## What worked? 
-Well the first thing that worked was that I used typunit16 for bf16_t. 
--- I also made a new function for matmuls with bf16 since it was not recognized as a template 
--- Then I had to meticulously change everything correctly such that matmuls use their respective quantization 
--- Turned out I made a cuda reference inside of model.cpp for bf16 
--- Temperature was also too high causing me to bug out 
--- Finally, the sampling final embedding was in fp16 and had to change it to bf16 and bf16matmul 
-
 # rajinfer
 
 **rajinfer** is a high-performance inference engine for large language models (LLMs), implemented entirely in pure C++ and CUDA. Designed for maximum speed and efficiency, it focuses on accelerating the inference process for modern LLMs without relying on external frameworks or Python dependencies. Currently, it supports the Llama 3.2 series and the Qwen 3 series, including Mixture of Experts (MoE) architectures. Built from the ground up for GPU acceleration, rajinfer prioritizes low-latency token generation, optimized kernel fusions, and minimal overhead to push the boundaries of what's possible in real-time LLM serving.
@@ -127,3 +119,11 @@ rajinfer's speed comes from custom CUDA optimizations, kernel fusion, and pure C
 ## Future Improvements
 
 > **Note**: While our custom matmuls provide a solid foundation and learning experience, they aren't fully optimized yet. In upcoming releases, we'll integrate cuDNN for advanced convolutions (if needed for any ops) and cuBLAS for highly tuned GEMM operations. This should yield 10-20% speedups in matmul-heavy layers by leveraging NVIDIA's battle-tested tensor cores and autotuning, especially for larger models and longer contexts. Stay tuned for benchmarks!
+
+## What worked? 
+Well the first thing that worked was that I used typunit16 for bf16_t. 
+-- I also made a new function for matmuls with bf16 since it was not recognized as a template 
+-- Then I had to meticulously change everything correctly such that matmuls use their respective quantization 
+-- Turned out I made a cuda reference inside of model.cpp for bf16 
+-- Temperature was also too high causing me to bug out 
+-- Finally, the sampling final embedding was in fp16 and had to change it to bf16 and bf16matmul 
