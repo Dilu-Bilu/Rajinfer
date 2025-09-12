@@ -6,12 +6,11 @@ This repository is a solo project aimed at democratizing ultra-fast inference fo
 
 ## Performance Benchmarks
 
-rajinfer delivers competitive performance compared to popular frameworks like Hugging Face Transformers, SGLang, and vLLM, with slight edges in overall throughput on consumer hardware. Below is a comparison of **Overall Throughput** (end-to-end tokens/s for prompt evaluation + generation). Benchmarks were run on an NVIDIA RTX 3060 GPU using the Llama 4.1 1B model, with batch size 1, FP16 precision, and no quantization. Tests focused on end-to-end throughput across a variety of prompts (average prompt length ~40 tokens, with generation up to 512 tokens). Advanced metrics like First Token Time (FTT), Prefill, and Decode were not measured in this round.
+rajinfer delivers competitive performance compared to popular frameworks like Hugging Face Transformers and vLLM, with slight edges in overall throughput on consumer hardware. Below is a comparison of **Overall Throughput** (end-to-end tokens/s for prompt evaluation + generation). Benchmarks were run on an NVIDIA RTX 3060 GPU using the Llama 4.1 1B model, with batch size 1, FP16 precision, and no quantization. Tests focused on end-to-end throughput across a variety of prompts (average prompt length ~40 tokens, with generation up to 512 tokens). Advanced metrics like First Token Time (FTT), Prefill, and Decode were not measured in this round.
 
 | Framework       | Overall Throughput (tokens/s) |
 |-----------------|-------------------------------|
 | Hugging Face   | 86.24                         |
-| SGLang         | 90.24                         |
 | rajinfer           | 109.36                        |
 | vLLM       | 110.25                        |
 
